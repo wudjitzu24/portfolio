@@ -61,10 +61,11 @@ footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
+
 @st.cache_data(ttl=60)
 def fetch_portfolio():
     try:
-        r = requests.get(f"{API_URL}/", timeout=5)
+        r = requests.get(f"{API_URL}/info", timeout=5)
         return r.json()
     except:
         return None
@@ -75,12 +76,21 @@ if data is None:
     st.error("Nie można połączyć się z API. Czy backend działa na porcie 8000?")
     st.stop()
 
+# Wyciągnięcie danych do zmiennych — unikamy apostrofów w f-stringach
+name     = data["name"]
+title    = data["title"]
+bio      = data["bio"]
+email    = data["email"]
+github   = data["github"]
+linkedin = data["linkedin"]
+projects = data["projects"]
+
 # --- HERO ---
 st.markdown(f"""
 <div class="hero">
-  <h1>👋 Cześć, jestem {data['name']}</h1>
-  <h2>{data['title']}</h2>
-  <p>{data['bio']}</p>
+  <h1>👋 Cześć, jestem {name}</h1>
+  <h2>{title}</h2>
+  <p>{bio}</p>
   <div style="margin-top:1.4rem">
     <span class="badge">Python</span>
     <span class="badge">FastAPI</span>
@@ -97,30 +107,33 @@ col1, col2 = st.columns([1, 1.2], gap="large")
 with col1:
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">O mnie</div>', unsafe_allow_html=True)
-    st.markdown(f'<p style="color:#b0aec8;line-height:1.7">{data["bio"]}</p>', unsafe_allow_html=True)
+    st.markdown(f'<p style="color:#b0aec8;line-height:1.7">{bio}</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Kontakt</div>', unsafe_allow_html=True)
     st.markdown(f"""
-    <p><a href="mailto:{data['email']}" style="color:#7ecfff">✉️ {data['email']}</a></p>
-    <p style="margin-top:.6rem"><a href="{data['github']}" target="_blank" style="color:#7ecfff">🐙 GitHub</a></p>
-    <p style="margin-top:.6rem"><a href="{data['linkedin']}" target="_blank" style="color:#7ecfff">💼 LinkedIn</a></p>
+    <p><a href="mailto:{email}" style="color:#7ecfff">✉️ {email}</a></p>
+    <p style="margin-top:.6rem"><a href="{github}" target="_blank" style="color:#7ecfff">🐙 GitHub</a></p>
+    <p style="margin-top:.6rem"><a href="{linkedin}" target="_blank" style="color:#7ecfff">💼 LinkedIn</a></p>
     """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Projekty</div>', unsafe_allow_html=True)
-    for proj in data["projects"]:
+    for proj in projects:
+        proj_name = proj["name"]
+        proj_desc = proj["description"]
+        proj_link = proj["link"]
         tags = " ".join(f'<span class="tech-tag">{t}</span>' for t in proj["tech"])
         st.markdown(f"""
         <div class="project-card">
-          <div class="project-name">{proj['name']}</div>
-          <div class="project-desc">{proj['description']}</div>
+          <div class="project-name">{proj_name}</div>
+          <div class="project-desc">{proj_desc}</div>
           <div>{tags}</div>
           <div style="margin-top:.7rem">
-            <a href="{proj['link']}" target="_blank" style="font-size:.85rem;color:#7ecfff">→ Zobacz na GitHub</a>
+            <a href="{proj_link}" target="_blank" style="font-size:.85rem;color:#7ecfff">→ Zobacz na GitHub</a>
           </div>
         </div>
         """, unsafe_allow_html=True)
@@ -133,19 +146,19 @@ st.markdown('<div class="section-title">Napisz do mnie</div>', unsafe_allow_html
 with st.form("contact_form", clear_on_submit=True):
     c1, c2 = st.columns(2)
     with c1:
-        name = st.text_input("Imię", placeholder="Jan Kowalski")
+        form_name = st.text_input("Imię", placeholder="Jan Kowalski")
     with c2:
-        email = st.text_input("E-mail", placeholder="jan@example.com")
+        form_email = st.text_input("E-mail", placeholder="jan@example.com")
     message = st.text_area("Wiadomość", height=130)
     submitted = st.form_submit_button("Wyślij wiadomość", use_container_width=True)
 
 if submitted:
-    if not name or not email or not message:
+    if not form_name or not form_email or not message:
         st.warning("Uzupełnij wszystkie pola.")
     else:
         try:
             resp = requests.post(f"{API_URL}/contact", json={
-                "name": name, "email": email, "message": message
+                "name": form_name, "email": form_email, "message": message
             }, timeout=5)
             if resp.status_code == 200:
                 st.success(resp.json()["message"])
