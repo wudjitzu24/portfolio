@@ -160,7 +160,7 @@ if submitted:
         try:
             resp = requests.post(f"{API_URL}/contact", json={
                 "name": form_name, "email": form_email, "message": message
-            }, timeout=30)
+            }, timeout=10)
             if resp.status_code == 200:
                 st.success(resp.json()["message"])
             else:
