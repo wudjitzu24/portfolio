@@ -65,10 +65,11 @@ footer { visibility: hidden; }
 @st.cache_data(ttl=60)
 def fetch_portfolio():
     try:
-        r = requests.get(f"{API_URL}/info", timeout=5)
+        r = requests.get(f"{API_URL}/info", timeout=30)
         return r.json()
     except:
         return None
+    
 
 data = fetch_portfolio()
 
@@ -159,7 +160,7 @@ if submitted:
         try:
             resp = requests.post(f"{API_URL}/contact", json={
                 "name": form_name, "email": form_email, "message": message
-            }, timeout=5)
+            }, timeout=30)
             if resp.status_code == 200:
                 st.success(resp.json()["message"])
             else:
