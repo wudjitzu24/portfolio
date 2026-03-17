@@ -4,15 +4,6 @@ import os
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
-st.write(f"API_URL: {API_URL}")
-
-try:
-    r = requests.get(f"{API_URL}/info", timeout=60)
-    st.write(f"Status: {r.status_code}")
-    st.write(r.json())
-except Exception as e:
-    st.write(f"Błąd: {e}")
-
 st.set_page_config(
     page_title="Przemysław Włodarczyk | Portfolio",
     page_icon="⚡",
