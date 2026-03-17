@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import resend
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import os
 
 app = FastAPI(title="Portfolio API", version="1.0.0")
@@ -12,9 +14,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Klucz Resend — bierzemy ze zmiennej środowiskowej
-resend.api_key = os.getenv("RESEND_API_KEY", "")
 
 class ContactForm(BaseModel):
     name: str
@@ -51,22 +50,33 @@ def send_contact(form: ContactForm):
     if len(form.message) < 10:
         raise HTTPException(status_code=400, detail="Wiadomość za krótka (min. 10 znaków)")
 
-    if not resend.api_key:
-        raise HTTPException(status_code=500, detail="Brak klucza RESEND_API_KEY")
+    gmail_user = os.getenv("GMAIL_USER")
+    gmail_password = os.getenv("GMAIL_APP_PASSWORD")
+
+    if not gmail_user or not gmail_password:
+        raise HTTPException(status_code=500, detail="Brak konfiguracji SMTP")
 
     try:
-        resend.Emails.send({
-            "from": "Portfolio <onboarding@resend.dev>",  # działa bez własnej domeny
-            "to": "Przemyslaw_wlodarczyk@outlook.com",
-            "subject": f"Portfolio — wiadomość od {form.name}",
-            "html": f"""
-                <h2>Nowa wiadomość z portfolio</h2>
-                <p><strong>Imię:</strong> {form.name}</p>
-                <p><strong>E-mail:</strong> {form.email}</p>
-                <p><strong>Wiadomość:</strong></p>
-                <p>{form.message}</p>
-            """
-        })
+        msg = MIMEMultipart()
+        msg["From"] = gmail_user
+        msg["To"] = "Przemyslaw_wlodarczyk@outlook.com"
+        msg["Subject"] = f"Portfolio — wiadomość od {form.name}"
+
+        body = f"""
+Nowa wiadomość z portfolio
+
+Imię: {form.name}
+E-mail: {form.email}
+
+Wiadomość:
+{form.message}
+        """
+        msg.attach(MIMEText(body, "plain"))
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(gmail_user, gmail_password)
+            server.sendmail(gmail_user, "Przemyslaw_wlodarczyk@outlook.com", msg.as_string())
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Błąd wysyłki: {str(e)}")
 
