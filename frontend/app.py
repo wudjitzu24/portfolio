@@ -65,13 +65,20 @@ footer { visibility: hidden; }
 @st.cache_data(ttl=60)
 def fetch_portfolio():
     try:
-        r = requests.get(f"{API_URL}/info", timeout=30)
+        r = requests.get(f"{API_URL}/info", timeout=60)
         return r.json()
     except:
         return None
     
 
-data = fetch_portfolio()
+with st.spinner("Ładowanie danych..."):
+    data = fetch_portfolio()
+
+if data is None:
+    st.cache_data.clear()
+    st.error("Nie można połączyć się z API. Odśwież stronę za chwilę.")
+    st.stop()
+
 
 if data is None:
     st.error("Nie można połączyć się z API. Czy backend działa na porcie 8000?")
